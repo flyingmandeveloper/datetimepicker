@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import com.fourmob.datetimepicker.R;
 import com.fourmob.datetimepicker.Utils;
+import com.fourmob.datetimepicker.date.SimpleMonthAdapter.CalendarDay;
 import com.nineoldandroids.animation.ObjectAnimator;
 
 import java.text.DateFormatSymbols;
@@ -67,6 +68,8 @@ public class DatePickerDialog extends DialogFragment implements View.OnClickList
     private int mWeekStart = mCalendar.getFirstDayOfWeek();
     private int mMaxYear = MAX_YEAR;
     private int mMinYear = MIN_YEAR;
+    
+    private SimpleMonthAdapter.CalendarDay mLessDay;
 
     private String mDayPickerDescription;
     private String mYearPickerDescription;
@@ -75,6 +78,8 @@ public class DatePickerDialog extends DialogFragment implements View.OnClickList
 
 	private TextView mDayOfWeekView;
 	private DayPickerView mDayPickerView;
+	private View mLineView;
+	private View mDoneButtonLayout;
 	private Button mDoneButton;
 	private LinearLayout mMonthAndDayView;
 	private TextView mSelectedDayTextView;
@@ -250,7 +255,7 @@ public class DatePickerDialog extends DialogFragment implements View.OnClickList
 
 	public View onCreateView(LayoutInflater layoutInflater, ViewGroup parent, Bundle bundle) {
 		getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-
+		
 		View view = layoutInflater.inflate(R.layout.date_picker_dialog, null);
 
 		mDayOfWeekView = ((TextView) view.findViewById(R.id.date_picker_header));
@@ -296,13 +301,25 @@ public class DatePickerDialog extends DialogFragment implements View.OnClickList
 		outAlphaAnimation.setDuration(300L);
 		mAnimator.setOutAnimation(outAlphaAnimation);
 
+		mLineView = view.findViewById(R.id.line_view);
+		mDoneButtonLayout = view.findViewById(R.id.done_layout);
 		mDoneButton = ((Button) view.findViewById(R.id.done));
 		mDoneButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View view) {
                 onDoneButtonClick();
 			}
 		});
-
+		
+		if (mCloseOnSingleTapDay)
+		{
+		    mDoneButtonLayout.setVisibility(View.GONE);
+		    mLineView.setVisibility(View.GONE);
+		}
+		else
+		{
+		    mDoneButtonLayout.setVisibility(View.VISIBLE);
+		    mLineView.setVisibility(View.VISIBLE);
+		}
 		updateDisplay(false);
 		setCurrentView(currentView, true);
 
@@ -314,6 +331,9 @@ public class DatePickerDialog extends DialogFragment implements View.OnClickList
 				mYearPickerView.postSetSelectionFromTop(listPosition, listPositionOffset);
 			}
 		}
+		
+		if (mLessDay!=null)
+		    mDayPickerView.setUnavailableLessDate(mLessDay);
 		return view;
 	}
 
@@ -397,6 +417,10 @@ public class DatePickerDialog extends DialogFragment implements View.OnClickList
 		if (mDayPickerView != null)
 			mDayPickerView.onChange();
 	}
+	
+	public void setUnavailableLessDate(int year, int month,int day) {
+	    mLessDay = new CalendarDay(year, month, day);
+    }
 
 	public void tryVibrate() {
 		if (mVibrator != null && mVibrate) {

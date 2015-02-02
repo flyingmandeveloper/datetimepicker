@@ -1,6 +1,7 @@
 package com.fourmob.datetimepicker.date;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -14,11 +15,13 @@ public class SimpleMonthAdapter extends BaseAdapter implements SimpleMonthView.O
 
     protected static int WEEK_7_OVERHANG_HEIGHT = 7;
     protected static final int MONTHS_IN_YEAR = 12;
+    protected static final int MAX_DAYS_IN_MONTH = 31;
 
 	private final Context mContext;
 	private final DatePickerController mController;
 
 	private CalendarDay mSelectedDay;
+	private CalendarDay mLessDay;
 
 	public SimpleMonthAdapter(Context context, DatePickerController datePickerController) {
 		mContext = context;
@@ -30,6 +33,23 @@ public class SimpleMonthAdapter extends BaseAdapter implements SimpleMonthView.O
 	private boolean isSelectedDayInMonth(int year, int month) {
 		return (mSelectedDay.year == year) && (mSelectedDay.month == month);
 	}
+	
+	private boolean isLessDayInMonth(int year, int month) {
+	    
+	    if (mLessDay == null)
+	        return false;
+	    
+	    if (year < mLessDay.year)
+	        return true;
+	    
+	    if (year > mLessDay.year)
+	        return false;
+	    
+	    if (month < mLessDay.month || month == mLessDay.month)
+	        return true;
+	    else
+            return false;
+    }
 
 	public int getCount() {
         return ((mController.getMaxYear() - mController.getMinYear()) + 1) * MONTHS_IN_YEAR;
@@ -67,10 +87,23 @@ public class SimpleMonthAdapter extends BaseAdapter implements SimpleMonthView.O
         if (isSelectedDayInMonth(year, month)) {
             selectedDay = mSelectedDay.day;
         }
+        
+        int lessDay = -1;
+        if (isLessDayInMonth(year,month)){
+            if (mLessDay.month == month)
+                lessDay = mLessDay.day;
+            else {
+                lessDay = MAX_DAYS_IN_MONTH+1;
+            }
+        }
+            
 
 		v.reuse();
 
         drawingParams.put(SimpleMonthView.VIEW_PARAMS_SELECTED_DAY, selectedDay);
+        drawingParams.put(SimpleMonthView.VIEW_PARAMS_LESS_DAY, lessDay);
+        Log.e("debug", "drawingParams put lessDay("+lessDay+")");
+        
         drawingParams.put(SimpleMonthView.VIEW_PARAMS_YEAR, year);
         drawingParams.put(SimpleMonthView.VIEW_PARAMS_MONTH, month);
         drawingParams.put(SimpleMonthView.VIEW_PARAMS_WEEK_START, mController.getFirstDayOfWeek());
@@ -100,6 +133,12 @@ public class SimpleMonthAdapter extends BaseAdapter implements SimpleMonthView.O
 		mSelectedDay = calendarDay;
 		notifyDataSetChanged();
 	}
+	
+	public void setLessDay(CalendarDay calendarDay) {
+        mLessDay = calendarDay;
+        Log.e("debug", "SimpleMonthAdapter setLessDay year("+mLessDay.year+") month("+mLessDay.month+") day("+mLessDay.day+")");
+        notifyDataSetChanged();
+    }
 
 	public static class CalendarDay {
 		private Calendar calendar;

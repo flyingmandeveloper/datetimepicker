@@ -5,12 +5,15 @@ import android.graphics.Paint.Style;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.format.DateUtils;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+
 import com.fourmob.datetimepicker.R;
 import com.fourmob.datetimepicker.Utils;
 
@@ -27,14 +30,16 @@ public class SimpleMonthView extends View {
     public static final String VIEW_PARAMS_MONTH = "month";
     public static final String VIEW_PARAMS_YEAR = "year";
     public static final String VIEW_PARAMS_SELECTED_DAY = "selected_day";
+    public static final String VIEW_PARAMS_LESS_DAY = "less_day";
     public static final String VIEW_PARAMS_WEEK_START = "week_start";
     public static final String VIEW_PARAMS_NUM_DAYS = "num_days";
     public static final String VIEW_PARAMS_FOCUS_MONTH = "focus_month";
     public static final String VIEW_PARAMS_SHOW_WK_NUM = "show_wk_num";
+    
 
     private static final int SELECTED_CIRCLE_ALPHA = 60;
     protected static int DEFAULT_HEIGHT = 32;
-    protected static final int DEFAULT_NUM_ROWS = 6;
+    protected static final int DEFAULT_NUM_ROWS = 5;
 	protected static int DAY_SELECTED_CIRCLE_SIZE;
 	protected static int DAY_SEPARATOR_WIDTH = 1;
 	protected static int MINI_DAY_NUMBER_TEXT_SIZE;
@@ -58,6 +63,8 @@ public class SimpleMonthView extends View {
     protected int mMonthTitleBGColor;
     protected int mMonthTitleColor;
     protected int mTodayNumberColor;
+    protected int mUnavailableColor;
+    protected int mUnavailableTodayColor;
 
     private final StringBuilder mStringBuilder;
     private final Formatter mFormatter;
@@ -67,7 +74,10 @@ public class SimpleMonthView extends View {
     protected int mLastMonth = -1;
     protected boolean mHasToday = false;
     protected int mSelectedDay = -1;
+    protected int mLessDay = -1;
     protected int mToday = -1;
+    protected int mLimitLessDay = -1;
+    protected int mLimitGreaterDay = -1;
     protected int mWeekStart = 1;
     protected int mNumDays = 7;
     protected int mNumCells = mNumDays;
@@ -97,10 +107,11 @@ public class SimpleMonthView extends View {
 		mDayOfWeekTypeface = resources.getString(R.string.day_of_week_label_typeface);
 		mMonthTitleTypeface = resources.getString(R.string.sans_serif);
 		mDayTextColor = resources.getColor(R.color.date_picker_text_normal);
-		mTodayNumberColor = resources.getColor(R.color.blue);
+		mTodayNumberColor = resources.getColor(R.color.primary_color);
 		mMonthTitleColor = resources.getColor(R.color.white);
 		mMonthTitleBGColor = resources.getColor(R.color.circle_background);
-
+		mUnavailableColor = resources.getColor(R.color.unavailable_color);
+		mUnavailableTodayColor = resources.getColor(R.color.unavailable_today_color);
 		mStringBuilder = new StringBuilder(50);
 		mFormatter = new Formatter(mStringBuilder, Locale.getDefault());
 
@@ -110,7 +121,7 @@ public class SimpleMonthView extends View {
 		MONTH_HEADER_SIZE = resources.getDimensionPixelOffset(R.dimen.month_list_item_header_height);
 		DAY_SELECTED_CIRCLE_SIZE = resources.getDimensionPixelSize(R.dimen.day_number_select_circle_radius);
 
-		mRowHeight = ((resources.getDimensionPixelOffset(R.dimen.date_picker_view_animator_height) - MONTH_HEADER_SIZE) / 6);
+		mRowHeight = ((resources.getDimensionPixelOffset(R.dimen.date_picker_view_animator_height) - MONTH_HEADER_SIZE) / DEFAULT_NUM_ROWS);
 
         initView();
 	}
@@ -130,7 +141,12 @@ public class SimpleMonthView extends View {
             int calendarDay = (i + mWeekStart) % mNumDays;
             int x = (2 * i + 1) * dayWidthHalf + mPadding;
             mDayLabelCalendar.set(Calendar.DAY_OF_WEEK, calendarDay);
-            canvas.drawText(mDateFormatSymbols.getShortWeekdays()[mDayLabelCalendar.get(Calendar.DAY_OF_WEEK)].toUpperCase(Locale.getDefault()), x, y, mMonthDayLabelPaint);
+            
+            canvas.drawText(
+                    mDateFormatSymbols.getShortWeekdays()[mDayLabelCalendar.get(Calendar.DAY_OF_WEEK)].toUpperCase(Locale.getDefault())
+                    , x
+                    , y
+                    , mMonthDayLabelPaint);
         }
 	}
 
@@ -153,6 +169,12 @@ public class SimpleMonthView extends View {
     }
 
 	private void onDayClick(SimpleMonthAdapter.CalendarDay calendarDay) {
+	    
+	    if (mLessDay>0)
+	    {
+	        if (calendarDay.day<mLessDay)
+	            return;
+	    }
 		if (mOnDayClickListener != null) {
 			mOnDayClickListener.onDayClick(this, calendarDay);
         }
@@ -175,10 +197,22 @@ public class SimpleMonthView extends View {
             }
             if (mHasToday && (mToday == day)) {
 				mMonthNumPaint.setColor(mTodayNumberColor);
-            } else {
-				mMonthNumPaint.setColor(mDayTextColor);
-            }
+                if (mLessDay>0)
+                {
+                    if (day<mLessDay)
+                        mMonthNumPaint.setColor(mUnavailableTodayColor);
+                }
 
+            } else {
+                
+				mMonthNumPaint.setColor(mDayTextColor);
+				if (mLessDay>0)
+	            {
+	                if (day<mLessDay)
+	                    mMonthNumPaint.setColor(mUnavailableColor);
+	            }
+            }
+            
 			canvas.drawText(String.format("%d", day), x, y, mMonthNumPaint);
 
 			dayOffset++;
@@ -288,6 +322,12 @@ public class SimpleMonthView extends View {
         if (params.containsKey(VIEW_PARAMS_SELECTED_DAY)) {
             mSelectedDay = params.get(VIEW_PARAMS_SELECTED_DAY);
         }
+        
+        if (params.containsKey(VIEW_PARAMS_LESS_DAY)) {
+            mLessDay = params.get(VIEW_PARAMS_LESS_DAY);
+            Log.e("debug", "SimpleMonthView mLessDay ("+mLessDay+")");
+        }
+        
 
         mMonth = params.get(VIEW_PARAMS_MONTH);
         mYear = params.get(VIEW_PARAMS_YEAR);
@@ -307,13 +347,15 @@ public class SimpleMonthView extends View {
         } else {
             mWeekStart = mCalendar.getFirstDayOfWeek();
         }
-
+        Log.e("debug", "setMonthParams mMonth("+mMonth+")");
+        
         mNumCells = Utils.getDaysInMonth(mMonth, mYear);
         for (int i = 0; i < mNumCells; i++) {
             final int day = i + 1;
             if (sameDay(day, today)) {
                 mHasToday = true;
                 mToday = day;
+                
             }
         }
 

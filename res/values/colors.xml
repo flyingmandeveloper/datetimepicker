@@ -5,14 +5,19 @@
     <color name="line_background">#ffcccccc</color>
     <color name="done_text_color_normal">#ff333333</color>
     <color name="done_text_color_disabled">#ffcccccc</color>
-    <color name="blue">#ff33b5e5</color>
-    <color name="darker_blue">#ff0099cc</color>
+    <color name="primary_color">#ff33b5e5</color>
+    <color name="primary_color_pressed">#ff0099cc</color>
     <color name="date_picker_text_normal">#ff999999</color>
     <color name="calendar_header">#ff999999</color>
     <color name="date_picker_view_animator">#fff2f2f2</color>
 
     <color name="ampm_text_color">#8c8c8c</color>
     <color name="numbers_text_color">#8c8c8c</color>
+    <color name="unavailable_color">#CCC</color>
+    <color name="unavailable_today_color">#addef0</color>
 
+    <color name="button_normal">#0000</color>
+    <color name="button_pressed">#2000</color>
+    
     <color name="transparent_black">#7F000000</color>
 </resources>

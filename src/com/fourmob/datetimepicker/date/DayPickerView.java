@@ -1,9 +1,13 @@
 package com.fourmob.datetimepicker.date;
 
+import com.fourmob.datetimepicker.date.SimpleMonthAdapter.CalendarDay;
+
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.AbsListView;
@@ -31,7 +35,8 @@ public class DayPickerView extends ListView implements AbsListView.OnScrollListe
 	protected ScrollStateRunnable mScrollStateChangedRunnable = new ScrollStateRunnable();
 	protected SimpleMonthAdapter.CalendarDay mSelectedDay = new SimpleMonthAdapter.CalendarDay();
 	protected SimpleMonthAdapter.CalendarDay mTempDay = new SimpleMonthAdapter.CalendarDay();
-
+	protected SimpleMonthAdapter.CalendarDay mLessDay;
+	
     protected int mNumWeeks = 6;
     protected boolean mShowWeekNumber = false;
     protected int mDaysPerWeek = 7;
@@ -72,7 +77,8 @@ public class DayPickerView extends ListView implements AbsListView.OnScrollListe
         return firstPosition + mostVisibleIndex;
 	}
 
-	public boolean goTo(SimpleMonthAdapter.CalendarDay day, boolean animate, boolean setSelected, boolean forceScroll) {
+	@SuppressLint("NewApi")
+    public boolean goTo(SimpleMonthAdapter.CalendarDay day, boolean animate, boolean setSelected, boolean forceScroll) {
         // Set the selected day
         if (setSelected) {
             mSelectedDay.set(day);
@@ -129,6 +135,13 @@ public class DayPickerView extends ListView implements AbsListView.OnScrollListe
 		setUpAdapter();
 		setAdapter(mAdapter);
 	}
+	
+	public void setUnavailableLessDate(CalendarDay lessDay)
+	{
+	    mLessDay = lessDay;
+	    Log.e("debug", "DayPickerView setUnavailableLessDate year("+lessDay.year+") month("+lessDay.month+") day("+lessDay.day+")");
+	    setUpAdapter();
+	}
 
 	protected void layoutChildren() {
 		super.layoutChildren();
@@ -182,6 +195,9 @@ public class DayPickerView extends ListView implements AbsListView.OnScrollListe
 			mAdapter = new SimpleMonthAdapter(getContext(), mController);
         }
 		mAdapter.setSelectedDay(this.mSelectedDay);
+		if (this.mLessDay!=null)
+		    mAdapter.setLessDay(mLessDay);
+		
 		mAdapter.notifyDataSetChanged();
 	}
 
@@ -219,6 +235,7 @@ public class DayPickerView extends ListView implements AbsListView.OnScrollListe
             mHandler.postDelayed(this, SCROLL_CHANGE_DELAY);
         }
 
+        @SuppressLint("NewApi")
         @Override
         public void run() {
             mCurrentScrollState = mNewState;
